@@ -12,11 +12,15 @@ class AddItemState extends State<AddItem> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _brandController = TextEditingController();
   final TextEditingController _newOptionController = TextEditingController();
+  final TextEditingController _sizeController = TextEditingController();
 
   String? _imagePath;
   String _clothingType = ClosetOptions.clothingTypes.first;
   String _color = ClosetOptions.colors.first;
   String _attire = ClosetOptions.attires.first;
+  String _size = 'S'; // Default size
+
+  List<String> _sizes = ['S', 'M', 'L']; // Predefined size options
 
   void _addNewOption(String category) {
     showDialog(
@@ -46,6 +50,9 @@ class AddItemState extends State<AddItem> {
                 } else if (category == 'Attire') {
                   ClosetOptions.addOption(ClosetOptions.attires, _newOptionController.text);
                   _attire = _newOptionController.text;
+                } else if (category == 'Size') {
+                  _sizes.add(_newOptionController.text);
+                  _size = _newOptionController.text;
                 }
               });
               _newOptionController.clear();
@@ -158,6 +165,19 @@ class AddItemState extends State<AddItem> {
                 },
                 () => _addNewOption('Attire'),
               ),
+              const SizedBox(height: 20),
+              // Size Section as Scrollable Dropdown
+              _buildDropdownSection(
+                'Size',
+                _size,
+                _sizes,
+                (newValue) {
+                  setState(() {
+                    _size = newValue!;
+                  });
+                },
+                () => _addNewOption('Size'),
+              ),
               const SizedBox(height: 40),
               // Add Item Button
               ElevatedButton(
@@ -190,6 +210,7 @@ class AddItemState extends State<AddItem> {
                       'type': _clothingType,
                       'color': _color,
                       'attire': _attire,
+                      'size': _sizeController.text.isEmpty ? _size : _sizeController.text, // Use custom size if entered
                     };
                     Navigator.pop(context, newItem);
                   }
@@ -230,10 +251,7 @@ class AddItemState extends State<AddItem> {
                 ),
                 onChanged: onChanged,
                 items: options.map((option) {
-                  return DropdownMenuItem<String>(
-                    value: option,
-                    child: Text(option),
-                  );
+                  return DropdownMenuItem<String>(value: option, child: Text(option));
                 }).toList(),
               ),
             ),

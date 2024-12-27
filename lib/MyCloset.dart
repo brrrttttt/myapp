@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'AddItem.dart';
+import 'ItemDetails.dart';
 
 class MyCloset extends StatefulWidget {
   const MyCloset({super.key});
@@ -10,11 +11,11 @@ class MyCloset extends StatefulWidget {
 
 class MyClosetState extends State<MyCloset> {
   final List<Map<String, dynamic>> _closetItems = [];
-  String _filter = 'all'; // Filter selection: "all", "used", "unused", "favorite"
-  String _searchQuery = ''; // Search query
-  String _typeFilter = 'All'; // Clothing type filter
-  String _colorFilter = 'All'; // Color filter
-  String _attireFilter = 'All'; // Attire filter
+  String _filter = 'all';
+  String _searchQuery = '';
+  String _typeFilter = 'Clothing Type'; // Default changed to "Clothing Type"
+  String _colorFilter = 'Color'; // Default changed to "Color"
+  String _attireFilter = 'Attire'; // Default changed to "Attire"
 
   // Toggle favorite status
   void _toggleFavorite(String itemName) {
@@ -25,44 +26,18 @@ class MyClosetState extends State<MyCloset> {
   }
 
   // Toggle used/unused status
-  void _toggleUsedStatus(String itemName) {
+  void _toggleUsed(String itemName) {
     setState(() {
       final item = _closetItems.firstWhere((i) => i['name'] == itemName);
       item['tag'] = item['tag'] == 'used' ? 'unused' : 'used';
     });
   }
 
-  // Show confirmation dialog before deleting an item
-  Future<void> _confirmDelete(Map<String, dynamic> item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Item'),
-        content: const Text('Are you sure you want to delete this item?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      setState(() {
-        _closetItems.remove(item);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${item['name']} has been deleted.'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+  // Delete an item
+  void _deleteItem(Map<String, dynamic> item) {
+    setState(() {
+      _closetItems.remove(item);
+    });
   }
 
   // Get filtered and searched items
@@ -72,9 +47,9 @@ class MyClosetState extends State<MyCloset> {
             (_filter == 'all' ||
                 item['tag'] == _filter ||
                 (_filter == 'favorite' && item['favorite'] == true)) &&
-            (item['type'] == _typeFilter || _typeFilter == 'All') &&
-            (item['color'] == _colorFilter || _colorFilter == 'All') &&
-            (item['attire'] == _attireFilter || _attireFilter == 'All') &&
+            (item['type'] == _typeFilter || _typeFilter == 'Clothing Type') &&
+            (item['color'] == _colorFilter || _colorFilter == 'Color') &&
+            (item['attire'] == _attireFilter || _attireFilter == 'Attire') &&
             item['name']!.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList()
       ..sort((a, b) =>
@@ -91,8 +66,6 @@ class MyClosetState extends State<MyCloset> {
       body: Column(
         children: [
           const SizedBox(height: 10),
-
-          // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: TextField(
@@ -107,10 +80,7 @@ class MyClosetState extends State<MyCloset> {
               },
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // Filter Buttons (Used, Unused, Favorites)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -126,18 +96,15 @@ class MyClosetState extends State<MyCloset> {
               ],
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // Additional Scrollable Filters (Type, Color, Attire)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildDropdownFilter(
-                  'Type',
-                  ['All', 'Shirt', 'Pants', 'Dress', 'Jacket'],
+                  'Clothing Type', // Updated label to 'Clothing Type'
+                  ['Clothing Type', 'Shirt', 'Pants', 'Dress', 'Jacket'],
                   _typeFilter,
                   (value) {
                     setState(() {
@@ -147,8 +114,8 @@ class MyClosetState extends State<MyCloset> {
                 ),
                 const SizedBox(width: 10),
                 _buildDropdownFilter(
-                  'Color',
-                  ['All', 'Red', 'Blue', 'Green', 'Black', 'White'],
+                  'Color', // Updated label to 'Color'
+                  ['Color', 'Red', 'Blue', 'Green', 'Black', 'White'],
                   _colorFilter,
                   (value) {
                     setState(() {
@@ -158,8 +125,8 @@ class MyClosetState extends State<MyCloset> {
                 ),
                 const SizedBox(width: 10),
                 _buildDropdownFilter(
-                  'Attire',
-                  ['All', 'Casual', 'Formal', 'Business Casual', 'Sporty'],
+                  'Attire', // Updated label to 'Attire'
+                  ['Attire', 'Casual', 'Formal', 'Business Casual', 'Sporty'],
                   _attireFilter,
                   (value) {
                     setState(() {
@@ -170,10 +137,7 @@ class MyClosetState extends State<MyCloset> {
               ],
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // Closet Items List
           Expanded(
             child: _closetItems.isEmpty
                 ? const Column(
@@ -198,7 +162,7 @@ class MyClosetState extends State<MyCloset> {
                           leading: item['image'] != null && item['image'] != ''
                               ? CircleAvatar(
                                   backgroundImage: AssetImage(item['image']),
-                                  radius: 25, // Avatar size
+                                  radius: 25,
                                 )
                               : const CircleAvatar(
                                   radius: 25,
@@ -206,7 +170,7 @@ class MyClosetState extends State<MyCloset> {
                                 ),
                           title: Text(
                             item['name']!,
-                            overflow: TextOverflow.ellipsis, // Truncate long names
+                            overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text('${item['type']} - ${item['color']}'),
                           trailing: Row(
@@ -224,12 +188,48 @@ class MyClosetState extends State<MyCloset> {
                                 onPressed: () => _toggleFavorite(item['name']!),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () => _confirmDelete(item),
+                                icon: Icon(
+                                  item['tag'] == 'used'
+                                      ? Icons.checkroom // Clothes icon for "used"
+                                      : Icons.clear_all, // Different icon for "unused"
+                                ),
+                                onPressed: () => _toggleUsed(item['name']!),
                               ),
                             ],
                           ),
-                          onTap: () => _toggleUsedStatus(item['name']!),
+                          onTap: () async {
+                            final updatedItem =
+                                await Navigator.push<Map<String, dynamic>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ItemDetails(
+                                  item: item,
+                                  onEdit: (updatedItem) {
+                                    setState(() {
+                                      final index = _closetItems.indexWhere(
+                                          (i) => i['name'] == item['name']);
+                                      if (index != -1) {
+                                        _closetItems[index] = updatedItem;
+                                      }
+                                    });
+                                  },
+                                  onDelete: () {
+                                    _deleteItem(item);
+                                  },
+                                ),
+                              ),
+                            );
+
+                            if (updatedItem != null) {
+                              setState(() {
+                                final index = _closetItems.indexWhere(
+                                    (i) => i['name'] == item['name']);
+                                if (index != -1) {
+                                  _closetItems[index] = updatedItem;
+                                }
+                              });
+                            }
+                          },
                         ),
                       );
                     },
@@ -239,7 +239,7 @@ class MyClosetState extends State<MyCloset> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final newItem = await Navigator.push<Map<String, String>>(
+          final newItem = await Navigator.push<Map<String, dynamic>>(
             context,
             MaterialPageRoute(builder: (context) => const AddItem()),
           );
@@ -266,7 +266,6 @@ class MyClosetState extends State<MyCloset> {
     );
   }
 
-  // Helper to build filter buttons
   Widget _buildFilterButton(String label, String filterValue) {
     return ElevatedButton(
       onPressed: () {
@@ -281,7 +280,6 @@ class MyClosetState extends State<MyCloset> {
     );
   }
 
-  // Helper to build dropdown filters
   Widget _buildDropdownFilter(
       String label, List<String> options, String currentValue, ValueChanged<String?> onChanged) {
     return DropdownButton<String>(
