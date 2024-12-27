@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'AddItem.dart';
+import 'CloseOptions.dart';
 import 'ItemDetails.dart';
 
 class MyCloset extends StatefulWidget {
@@ -16,6 +17,7 @@ class MyClosetState extends State<MyCloset> {
   String _typeFilter = 'Clothing Type'; // Default changed to "Clothing Type"
   String _colorFilter = 'Color'; // Default changed to "Color"
   String _attireFilter = 'Attire'; // Default changed to "Attire"
+  String _sizeFilter = 'Size'; // Default size is 'Size' instead of 'S'
 
   // Toggle favorite status
   void _toggleFavorite(String itemName) {
@@ -50,10 +52,26 @@ class MyClosetState extends State<MyCloset> {
             (item['type'] == _typeFilter || _typeFilter == 'Clothing Type') &&
             (item['color'] == _colorFilter || _colorFilter == 'Color') &&
             (item['attire'] == _attireFilter || _attireFilter == 'Attire') &&
+            (item['size'] == _sizeFilter || _sizeFilter == 'Size') && // Adjust filter to 'Size'
             item['name']!.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList()
       ..sort((a, b) =>
           a['name']!.toLowerCase().compareTo(b['name']!.toLowerCase()));
+  }
+
+  // Reset filter to default
+  void _resetFilter(String filterType) {
+    setState(() {
+      if (filterType == 'Clothing Type') {
+        _typeFilter = 'Clothing Type';
+      } else if (filterType == 'Color') {
+        _colorFilter = 'Color';
+      } else if (filterType == 'Attire') {
+        _attireFilter = 'Attire';
+      } else if (filterType == 'Size') {
+        _sizeFilter = 'Size'; // Reset to 'Size'
+      }
+    });
   }
 
   @override
@@ -102,37 +120,28 @@ class MyClosetState extends State<MyCloset> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildDropdownFilter(
-                  'Clothing Type', // Updated label to 'Clothing Type'
-                  ['Clothing Type', 'Shirt', 'Pants', 'Dress', 'Jacket'],
+                _buildScrollableFilterButton(
+                  'Clothing Type',
                   _typeFilter,
-                  (value) {
-                    setState(() {
-                      _typeFilter = value!;
-                    });
-                  },
+                  () => _resetFilter('Clothing Type'),
                 ),
                 const SizedBox(width: 10),
-                _buildDropdownFilter(
-                  'Color', // Updated label to 'Color'
-                  ['Color', 'Red', 'Blue', 'Green', 'Black', 'White'],
+                _buildScrollableFilterButton(
+                  'Color',
                   _colorFilter,
-                  (value) {
-                    setState(() {
-                      _colorFilter = value!;
-                    });
-                  },
+                  () => _resetFilter('Color'),
                 ),
                 const SizedBox(width: 10),
-                _buildDropdownFilter(
-                  'Attire', // Updated label to 'Attire'
-                  ['Attire', 'Casual', 'Formal', 'Business Casual', 'Sporty'],
+                _buildScrollableFilterButton(
+                  'Attire',
                   _attireFilter,
-                  (value) {
-                    setState(() {
-                      _attireFilter = value!;
-                    });
-                  },
+                  () => _resetFilter('Attire'),
+                ),
+                const SizedBox(width: 10),
+                _buildScrollableFilterButton(
+                  'Size',
+                  _sizeFilter,
+                  () => _resetFilter('Size'),
                 ),
               ],
             ),
@@ -253,6 +262,7 @@ class MyClosetState extends State<MyCloset> {
                 'type': newItem['type'] ?? '',
                 'color': newItem['color'] ?? '',
                 'attire': newItem['attire'] ?? '',
+                'size': newItem['size'] ?? 'Size', // Size is now 'Size' instead of 'S'
                 'tag': 'unused',
                 'favorite': false,
               });
@@ -280,17 +290,64 @@ class MyClosetState extends State<MyCloset> {
     );
   }
 
-  Widget _buildDropdownFilter(
-      String label, List<String> options, String currentValue, ValueChanged<String?> onChanged) {
-    return DropdownButton<String>(
-      value: currentValue,
-      onChanged: onChanged,
-      items: options.map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value),
-        );
-      }).toList(),
+  Widget _buildScrollableFilterButton(
+    String label, 
+    String currentValue, 
+    VoidCallback onReset,
+  ) {
+    // Only show the reset button (X) when the current value is different from the default
+    bool showClearButton = currentValue != label;
+
+    return Row(
+      children: [
+        ElevatedButton(
+          onPressed: () async {
+            final result = await showDialog<String>(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: Text('Select $label'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      children: ClosetOptions.getOptionsForFilter(label)
+                          .map((option) {
+                        return RadioListTile<String>(
+                          title: Text(option),
+                          value: option,
+                          groupValue: currentValue,
+                          onChanged: (value) {
+                            Navigator.of(context).pop(value);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              },
+            );
+
+            if (result != null && result != currentValue) {
+              setState(() {
+                if (label == 'Clothing Type') {
+                  _typeFilter = result;
+                } else if (label == 'Color') {
+                  _colorFilter = result;
+                } else if (label == 'Attire') {
+                  _attireFilter = result;
+                } else if (label == 'Size') {
+                  _sizeFilter = result;
+                }
+              });
+            }
+          },
+          child: Text(currentValue),
+        ),
+        if (showClearButton)
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: onReset,
+          ),
+      ],
     );
   }
 }

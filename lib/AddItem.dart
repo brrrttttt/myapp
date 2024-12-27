@@ -18,10 +18,11 @@ class AddItemState extends State<AddItem> {
   String _clothingType = ClosetOptions.clothingTypes.first;
   String _color = ClosetOptions.colors.first;
   String _attire = ClosetOptions.attires.first;
-  String _size = 'S'; // Default size
+  String _size = ClosetOptions.sizes.first; // Default size
 
-  List<String> _sizes = ['S', 'M', 'L']; // Predefined size options
+  List<String> _sizes = ClosetOptions.sizes; // Synchronized with ClosetOptions
 
+  // Add a new option to the respective category
   void _addNewOption(String category) {
     showDialog(
       context: context,
@@ -41,7 +42,7 @@ class AddItemState extends State<AddItem> {
           TextButton(
             onPressed: () {
               setState(() {
-                if (category == 'Type') {
+                if (category == 'Clothing Type') {
                   ClosetOptions.addOption(ClosetOptions.clothingTypes, _newOptionController.text);
                   _clothingType = _newOptionController.text;
                 } else if (category == 'Color') {
@@ -51,6 +52,7 @@ class AddItemState extends State<AddItem> {
                   ClosetOptions.addOption(ClosetOptions.attires, _newOptionController.text);
                   _attire = _newOptionController.text;
                 } else if (category == 'Size') {
+                  ClosetOptions.addOption(ClosetOptions.sizes, _newOptionController.text);
                   _sizes.add(_newOptionController.text);
                   _size = _newOptionController.text;
                 }
@@ -139,7 +141,7 @@ class AddItemState extends State<AddItem> {
                     _clothingType = newValue!;
                   });
                 },
-                () => _addNewOption('Type'),
+                () => _addNewOption('Clothing Type'),
               ),
               const SizedBox(height: 20),
               _buildDropdownSection(
