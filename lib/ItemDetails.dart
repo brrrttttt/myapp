@@ -5,64 +5,69 @@ class ItemDetails extends StatelessWidget {
   final Map<String, dynamic> item;
   final ValueChanged<Map<String, dynamic>> onEdit; // Callback when item is updated
   final VoidCallback onDelete; // Callback for delete action
+  final ValueChanged<Map<String, dynamic>> onUsedToggle; // Callback to toggle the used/unused status
 
   const ItemDetails({
     super.key,
     required this.item,
     required this.onEdit,
     required this.onDelete,
+    required this.onUsedToggle,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isUsed = item['tag'] == 'used'; // Check if the item is marked as used
+
     return Scaffold(
       appBar: AppBar(
         title: Text(item['name'] ?? 'Item Details'),
         backgroundColor: Colors.deepPurple,
         actions: [
-          // Delete Icon
           IconButton(
             icon: const Icon(Icons.delete_forever, color: Colors.red),
-            onPressed: () {
-              _confirmDelete(context); // Trigger the delete confirmation dialog
-            },
+            onPressed: () => _confirmDelete(context),
           ),
         ],
       ),
-      body: SingleChildScrollView(  // Wrap content in SingleChildScrollView
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Display image or placeholder icon
             Center(
-              child: item['image'] != null && item['image'].isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        item['image'],
-                        height: 200,
-                        fit: BoxFit.cover,
+              child: GestureDetector(
+                onTap: () {
+                  // Optionally, add logic here for interacting with the image
+                  print('Image tapped');
+                },
+                child: item['image'] != null && item['image'].isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          item['image'],
+                          height: 200,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.image,
+                        size: 150,
+                        color: Colors.grey,
                       ),
-                    )
-                  : const Icon(
-                      Icons.image,
-                      size: 150,
-                      color: Colors.grey,
-                    ),
+              ),
             ),
             const SizedBox(height: 20),
-
-            // Display item details in a card style
             _buildDetailCard('Name', item['name']),
             _buildDetailCard('Brand', item['brand']),
             _buildDetailCard('Type', item['type']),
             _buildDetailCard('Color', item['color']),
             _buildDetailCard('Attire', item['attire']),
+            _buildDetailCard('Last Used', _formatLastUsed(item['lastUsed'])),
+            _buildDetailCard('Status', isUsed ? 'Used' : 'Unused'),
 
             const SizedBox(height: 20),
 
-            // Edit Button with rounded corners and a gradient background
             Center(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -70,39 +75,39 @@ class ItemDetails extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
                 onPressed: () async {
-                  // Navigate to the EditItem screen and wait for the result
-                  final updatedItem =
-                      await Navigator.push<Map<String, dynamic>>(
+                  // Navigate to EditItem and await the updated item data
+                  final updatedItem = await Navigator.push<Map<String, dynamic>>(
                     context,
                     MaterialPageRoute(
                       builder: (context) => EditItem(
-                        item: item,
-                        onSave: (updatedItem) {
-                          onEdit(updatedItem); // Update the parent item list
-                        },
+                        item: item,  // Pass the current item to EditItem
+                        onSave: onEdit,  // Pass the onSave callback to EditItem
                       ),
                     ),
                   );
 
-                  // If an updated item is returned, notify the parent widget
+                  // If an updated item is returned, invoke onEdit callback
                   if (updatedItem != null) {
-                    onEdit(updatedItem); // Update the item in the parent widget
+                    onEdit(updatedItem);
                   }
                 },
                 child: const Text('Edit', style: TextStyle(fontSize: 16)),
               ),
             ),
+
+            const SizedBox(height: 20),
+
+            // Removed the "Mark as Used" button as per your request
           ],
         ),
       ),
     );
   }
 
-  // Helper function to display item details in a card style
+  // Helper method to build a detailed card for each item property
   Widget _buildDetailCard(String label, String? value) {
     return Card(
       elevation: 4,
@@ -135,7 +140,15 @@ class ItemDetails extends StatelessWidget {
     );
   }
 
-  // Function to confirm delete action
+  // Helper method to format the lastUsed date
+  String _formatLastUsed(String? lastUsed) {
+    if (lastUsed == null || lastUsed.isEmpty) {
+      return 'Never used';
+    }
+    return lastUsed;
+  }
+
+  // Method to confirm deletion of an item
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
@@ -143,23 +156,32 @@ class ItemDetails extends StatelessWidget {
         title: const Text('Delete Item'),
         content: const Text('Are you sure you want to delete this item?'),
         actions: [
-          // Cancel button
           TextButton(
-            onPressed: () => Navigator.pop(context), // Close the dialog
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          // Delete button
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close the dialog first
-              onDelete(); // Perform the delete action
-              // Ensure that the delete is performed before navigating back
-              Navigator.pop(context); // Pop the ItemDetails screen
+              Navigator.pop(context);
+              onDelete();
+              Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+  }
+
+  // This method ensures that lastUsed only updates when the item is marked as 'used'
+  void onUsedToggleCallback(Map<String, dynamic> updatedItem) {
+    if (updatedItem['tag'] == 'used') {
+      // Only update lastUsed if it is not already set
+      if (updatedItem['lastUsed'] == null || updatedItem['lastUsed'].isEmpty) {
+        updatedItem['lastUsed'] = DateTime.now().toString(); // Set lastUsed only when marking as used
+      }
+    }
+    // Pass the updated item to the parent callback to update the state
+    onUsedToggle(updatedItem);
   }
 }

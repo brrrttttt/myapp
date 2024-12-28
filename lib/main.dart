@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/splash_screen.dart';
+import 'DatabaseHelper.dart';
 
 void main() {
+  DatabaseHelper.initialize();
   runApp(const MyApp());
 }
 

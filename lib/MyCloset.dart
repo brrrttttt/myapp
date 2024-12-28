@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'AddItem.dart';
-import 'CloseOptions.dart';
 import 'ItemDetails.dart';
 
 class MyCloset extends StatefulWidget {
@@ -14,10 +13,10 @@ class MyClosetState extends State<MyCloset> {
   final List<Map<String, dynamic>> _closetItems = [];
   String _filter = 'all';
   String _searchQuery = '';
-  String _typeFilter = 'Clothing Type'; // Default changed to "Clothing Type"
-  String _colorFilter = 'Color'; // Default changed to "Color"
-  String _attireFilter = 'Attire'; // Default changed to "Attire"
-  String _sizeFilter = 'Size'; // Default size is 'Size' instead of 'S'
+  String _typeFilter = 'Clothing Type';
+  String _colorFilter = 'Color';
+  String _attireFilter = 'Attire';
+  String _sizeFilter = 'Size';
 
   // Toggle favorite status
   void _toggleFavorite(String itemName) {
@@ -27,11 +26,16 @@ class MyClosetState extends State<MyCloset> {
     });
   }
 
-  // Toggle used/unused status
-  void _toggleUsed(String itemName) {
+  // Toggle used/unused status and update lastUsed
+  void _toggleUsed(Map<String, dynamic> item) {
     setState(() {
-      final item = _closetItems.firstWhere((i) => i['name'] == itemName);
-      item['tag'] = item['tag'] == 'used' ? 'unused' : 'used';
+      if (item['tag'] == 'unused') {
+        item['tag'] = 'used';  // Mark as used
+        item['lastUsed'] = DateTime.now().toString();  // Set the current date and time
+      } else {
+        item['tag'] = 'unused';  // Mark as unused
+        item['lastUsed'] = '';  // Reset the lastUsed date when marked as unused
+      }
     });
   }
 
@@ -52,7 +56,7 @@ class MyClosetState extends State<MyCloset> {
             (item['type'] == _typeFilter || _typeFilter == 'Clothing Type') &&
             (item['color'] == _colorFilter || _colorFilter == 'Color') &&
             (item['attire'] == _attireFilter || _attireFilter == 'Attire') &&
-            (item['size'] == _sizeFilter || _sizeFilter == 'Size') && // Adjust filter to 'Size'
+            (item['size'] == _sizeFilter || _sizeFilter == 'Size') &&
             item['name']!.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList()
       ..sort((a, b) =>
@@ -69,9 +73,25 @@ class MyClosetState extends State<MyCloset> {
       } else if (filterType == 'Attire') {
         _attireFilter = 'Attire';
       } else if (filterType == 'Size') {
-        _sizeFilter = 'Size'; // Reset to 'Size'
+        _sizeFilter = 'Size';
       }
     });
+  }
+
+  // Options for the filters
+  List<String> _getFilterOptions(String filterType) {
+    switch (filterType) {
+      case 'Clothing Type':
+        return ['Clothing Type', 'Shirt', 'Pants', 'Shoes', 'Jacket'];
+      case 'Color':
+        return ['Color', 'Red', 'Blue', 'Black', 'White'];
+      case 'Attire':
+        return ['Attire', 'Casual', 'Formal', 'Sportswear'];
+      case 'Size':
+        return ['Size', 'S', 'M', 'L', 'XL'];
+      default:
+        return [];
+    }
   }
 
   @override
@@ -168,7 +188,7 @@ class MyClosetState extends State<MyCloset> {
                         margin: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         child: ListTile(
-                          leading: item['image'] != null && item['image'] != ''
+                          leading: item['image'] != null && item['image'].isNotEmpty
                               ? CircleAvatar(
                                   backgroundImage: AssetImage(item['image']),
                                   radius: 25,
@@ -178,7 +198,7 @@ class MyClosetState extends State<MyCloset> {
                                   child: Icon(Icons.image, size: 30),
                                 ),
                           title: Text(
-                            item['name']!,
+                            item['name']! ,
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text('${item['type']} - ${item['color']}'),
@@ -199,10 +219,10 @@ class MyClosetState extends State<MyCloset> {
                               IconButton(
                                 icon: Icon(
                                   item['tag'] == 'used'
-                                      ? Icons.checkroom // Clothes icon for "used"
-                                      : Icons.clear_all, // Different icon for "unused"
+                                      ? Icons.checkroom
+                                      : Icons.clear_all,
                                 ),
-                                onPressed: () => _toggleUsed(item['name']!),
+                                onPressed: () => _toggleUsed(item),
                               ),
                             ],
                           ),
@@ -224,6 +244,15 @@ class MyClosetState extends State<MyCloset> {
                                   },
                                   onDelete: () {
                                     _deleteItem(item);
+                                  },
+                                  onUsedToggle: (updatedItem) {
+                                    setState(() {
+                                      final index = _closetItems.indexWhere(
+                                          (i) => i['name'] == item['name']);
+                                      if (index != -1) {
+                                        _closetItems[index] = updatedItem;
+                                      }
+                                    });
                                   },
                                 ),
                               ),
@@ -256,15 +285,16 @@ class MyClosetState extends State<MyCloset> {
           if (newItem != null) {
             setState(() {
               _closetItems.add({
-                'name': newItem['name']!,
+                'name': newItem['name']! ,
                 'brand': newItem['brand'] ?? '',
-                'image': newItem['image'] ?? '',
+                'image': newItem['image'] ?? 'assets/images/default_image.png', // Default image
                 'type': newItem['type'] ?? '',
                 'color': newItem['color'] ?? '',
                 'attire': newItem['attire'] ?? '',
-                'size': newItem['size'] ?? 'Size', // Size is now 'Size' instead of 'S'
+                'size': newItem['size'] ?? 'Size',
                 'tag': 'unused',
                 'favorite': false,
+                'lastUsed': '', // Ensure a default value for lastUsed
               });
             });
           }
@@ -291,11 +321,10 @@ class MyClosetState extends State<MyCloset> {
   }
 
   Widget _buildScrollableFilterButton(
-    String label, 
-    String currentValue, 
+    String label,
+    String currentValue,
     VoidCallback onReset,
   ) {
-    // Only show the reset button (X) when the current value is different from the default
     bool showClearButton = currentValue != label;
 
     return Row(
@@ -309,9 +338,9 @@ class MyClosetState extends State<MyCloset> {
                   title: Text('Select $label'),
                   content: SingleChildScrollView(
                     child: Column(
-                      children: ClosetOptions.getOptionsForFilter(label)
+                      children: _getFilterOptions(label)
                           .map((option) {
-                        return RadioListTile<String>(
+                        return RadioListTile<String>( 
                           title: Text(option),
                           value: option,
                           groupValue: currentValue,
