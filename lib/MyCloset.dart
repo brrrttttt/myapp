@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'AddItem.dart';
 import 'ItemDetails.dart';
+import 'ClosetOptions.dart'; // Import the ClosetOptions class
 
 class MyCloset extends StatefulWidget {
   const MyCloset({super.key});
@@ -13,10 +14,10 @@ class MyClosetState extends State<MyCloset> {
   final List<Map<String, dynamic>> _closetItems = [];
   String _filter = 'all';
   String _searchQuery = '';
-  String _typeFilter = 'Clothing Type';
-  String _colorFilter = 'Color';
-  String _attireFilter = 'Attire';
-  String _sizeFilter = 'Size';
+  String _typeFilter = ClosetOptions.getDefaultOption('Clothing Type');
+  String _colorFilter = ClosetOptions.getDefaultOption('Color');
+  String _attireFilter = ClosetOptions.getDefaultOption('Attire');
+  String _sizeFilter = ClosetOptions.getDefaultOption('Size');
 
   // Toggle favorite status
   void _toggleFavorite(String itemName) {
@@ -67,31 +68,20 @@ class MyClosetState extends State<MyCloset> {
   void _resetFilter(String filterType) {
     setState(() {
       if (filterType == 'Clothing Type') {
-        _typeFilter = 'Clothing Type';
+        _typeFilter = ClosetOptions.getDefaultOption('Clothing Type');
       } else if (filterType == 'Color') {
-        _colorFilter = 'Color';
+        _colorFilter = ClosetOptions.getDefaultOption('Color');
       } else if (filterType == 'Attire') {
-        _attireFilter = 'Attire';
+        _attireFilter = ClosetOptions.getDefaultOption('Attire');
       } else if (filterType == 'Size') {
-        _sizeFilter = 'Size';
+        _sizeFilter = ClosetOptions.getDefaultOption('Size');
       }
     });
   }
 
   // Options for the filters
   List<String> _getFilterOptions(String filterType) {
-    switch (filterType) {
-      case 'Clothing Type':
-        return ['Clothing Type', 'Shirt', 'Pants', 'Shoes', 'Jacket'];
-      case 'Color':
-        return ['Color', 'Red', 'Blue', 'Black', 'White'];
-      case 'Attire':
-        return ['Attire', 'Casual', 'Formal', 'Sportswear'];
-      case 'Size':
-        return ['Size', 'S', 'M', 'L', 'XL'];
-      default:
-        return [];
-    }
+    return ClosetOptions.getOptionsForFilter(filterType);
   }
 
   @override
@@ -198,7 +188,7 @@ class MyClosetState extends State<MyCloset> {
                                   child: Icon(Icons.image, size: 30),
                                 ),
                           title: Text(
-                            item['name']! ,
+                            item['name']!,
                             overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text('${item['type']} - ${item['color']}'),
@@ -285,7 +275,7 @@ class MyClosetState extends State<MyCloset> {
           if (newItem != null) {
             setState(() {
               _closetItems.add({
-                'name': newItem['name']! ,
+                'name': newItem['name']!,
                 'brand': newItem['brand'] ?? '',
                 'image': newItem['image'] ?? 'assets/images/default_image.png', // Default image
                 'type': newItem['type'] ?? '',
